@@ -29,10 +29,14 @@ interface CalendarDay {
   isCurrentMonth: boolean;
   isToday: boolean;
   hasSchedule: boolean;
+  monthIndex: number;
 }
 
 const Schedule: React.FC = () => {
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentStartDate, setCurrentStartDate] = useState(() => {
+    // Start from August 2025 (current month)
+    return new Date(2025, 7, 1); // Month is 0-indexed, so 7 = August
+  });
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [schedules, setSchedules] = useState<{ [key: string]: ScheduleEntry[] }>({});
@@ -70,43 +74,48 @@ const Schedule: React.FC = () => {
     localStorage.setItem('fairySchedules', JSON.stringify(schedules));
   }, [schedules]);
 
-  // Generate calendar days
-  const generateCalendarDays = (): CalendarDay[] => {
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-    
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const startDate = new Date(firstDay);
-    startDate.setDate(startDate.getDate() - firstDay.getDay());
-    
-    const days: CalendarDay[] = [];
+  // Generate 4 months of calendar data
+  const generate4MonthsData = (): CalendarDay[] => {
+    const allDays: CalendarDay[] = [];
     const today = new Date();
     
-    for (let i = 0; i < 42; i++) {
-      const date = new Date(startDate);
-      date.setDate(startDate.getDate() + i);
+    for (let monthOffset = 0; monthOffset < 4; monthOffset++) {
+      const currentMonth = new Date(currentStartDate.getFullYear(), currentStartDate.getMonth() + monthOffset, 1);
+      const year = currentMonth.getFullYear();
+      const month = currentMonth.getMonth();
       
-      const dateKey = date.toDateString();
-      const isCurrentMonth = date.getMonth() === month;
-      const isToday = date.toDateString() === today.toDateString();
-      const hasSchedule = schedules[dateKey] && schedules[dateKey].length > 0;
+      const firstDay = new Date(year, month, 1);
+      const lastDay = new Date(year, month + 1, 0);
+      const startDate = new Date(firstDay);
+      startDate.setDate(startDate.getDate() - firstDay.getDay());
       
-      days.push({
-        date,
-        isCurrentMonth,
-        isToday,
-        hasSchedule
-      });
+      // Generate 42 days (6 weeks) for each month
+      for (let i = 0; i < 42; i++) {
+        const date = new Date(startDate);
+        date.setDate(startDate.getDate() + i);
+        
+        const dateKey = date.toDateString();
+        const isCurrentMonth = date.getMonth() === month;
+        const isToday = date.toDateString() === today.toDateString();
+        const hasSchedule = schedules[dateKey] && schedules[dateKey].length > 0;
+        
+        allDays.push({
+          date,
+          isCurrentMonth,
+          isToday,
+          hasSchedule,
+          monthIndex: monthOffset
+        });
+      }
     }
     
-    return days;
+    return allDays;
   };
 
-  const navigateMonth = (direction: 'prev' | 'next') => {
-    const newDate = new Date(currentDate);
-    newDate.setMonth(currentDate.getMonth() + (direction === 'next' ? 1 : -1));
-    setCurrentDate(newDate);
+  const navigate4Months = (direction: 'prev' | 'next') => {
+    const newStartDate = new Date(currentStartDate);
+    newStartDate.setMonth(currentStartDate.getMonth() + (direction === 'next' ? 4 : -4));
+    setCurrentStartDate(newStartDate);
   };
 
   const handleDateClick = (date: Date) => {
@@ -208,8 +217,37 @@ const Schedule: React.FC = () => {
     });
   };
 
-  const calendarDays = generateCalendarDays();
-  const selectedDateSchedules = selectedDate ? schedules[selectedDate.toDateString()] || [] : [];
+  const get4MonthsRange = () => {
+    const endDate = new Date(currentStartDate.getFullYear(), currentStartDate.getMonth() + 3, 0);
+    return `${months[currentStartDate.getMonth()]} ${currentStartDate.getFullYear()} - ${months[endDate.getMonth()]} ${endDate.getFullYear()}`;
+  };
+
+  const getVisibleSchedules = () => {
+    const visibleSchedules: ScheduleEntry[] = [];
+    const startMonth = currentStartDate.getMonth();
+    const startYear = currentStartDate.getFullYear();
+    
+    Object.entries(schedules).forEach(([dateKey, entries]) => {
+      const date = new Date(dateKey);
+      const dateMonth = date.getMonth();
+      const dateYear = date.getFullYear();
+      
+      // Check if date falls within the 4-month range
+      const monthsDiff = (dateYear - startYear) * 12 + (dateMonth - startMonth);
+      if (monthsDiff >= 0 && monthsDiff < 4) {
+        visibleSchedules.push(...entries);
+      }
+    });
+    
+    return visibleSchedules.sort((a, b) => {
+      const dateA = new Date(a.date + ' ' + a.time);
+      const dateB = new Date(b.date + ' ' + b.time);
+      return dateA.getTime() - dateB.getTime();
+    });
+  };
+
+  const calendarDays = generate4MonthsData();
+  const visibleSchedules = getVisibleSchedules();
 
   return (
     <div className="space-y-6">
@@ -218,10 +256,10 @@ const Schedule: React.FC = () => {
         <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-600 font-serif mb-2">
           📅 Magical Schedule 📅
         </h2>
-        <p className="text-emerald-600">Plan your fairy tale adventures with our enchanted calendar</p>
+        <p className="text-emerald-600">Plan your fairy tale adventures across the seasons</p>
       </div>
 
-      {/* Calendar Container */}
+      {/* 4-Month Calendar Container */}
       <div className="backdrop-blur-md bg-white/50 rounded-3xl p-6 border border-emerald-200/50 relative overflow-hidden">
         {/* Decorative Elements */}
         <div className="absolute top-4 left-4 animate-pulse">
@@ -237,66 +275,93 @@ const Schedule: React.FC = () => {
           <Leaf className="w-4 h-4 text-emerald-400 opacity-40 transform -rotate-45" />
         </div>
 
-        {/* Calendar Header */}
+        {/* Navigation Header */}
         <div className="flex items-center justify-between mb-6">
           <button
-            onClick={() => navigateMonth('prev')}
-            className="p-2 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-700 transition-all duration-200 transform hover:scale-110"
+            onClick={() => navigate4Months('prev')}
+            className="group flex items-center space-x-2 p-3 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-700 transition-all duration-300 transform hover:scale-110"
           >
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className="w-5 h-5 group-hover:animate-pulse" />
+            <span className="hidden sm:inline font-medium">Previous </span>
           </button>
           
-          <h3 className="text-2xl font-bold text-emerald-800 font-serif">
-            {months[currentDate.getMonth()]} {currentDate.getFullYear()}
-          </h3>
+          <div className="text-center">
+            <h3 className="text-2xl font-bold text-emerald-800 font-serif">
+              {get4MonthsRange()}
+            </h3>
+            <p className="text-emerald-600 text-sm">✨ Your Magical Calendar ✨</p>
+          </div>
           
           <button
-            onClick={() => navigateMonth('next')}
-            className="p-2 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-700 transition-all duration-200 transform hover:scale-110"
+            onClick={() => navigate4Months('next')}
+            className="group flex items-center space-x-2 p-3 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-700 transition-all duration-300 transform hover:scale-110"
           >
-            <ChevronRight className="w-5 h-5" />
+            <span className="hidden sm:inline font-medium">Next </span>
+            <ChevronRight className="w-5 h-5 group-hover:animate-pulse" />
           </button>
         </div>
 
-        {/* Week Days Header */}
-        <div className="grid grid-cols-7 gap-2 mb-4">
-          {weekDays.map(day => (
-            <div key={day} className="text-center py-2 text-emerald-700 font-semibold text-sm">
-              {day}
-            </div>
-          ))}
-        </div>
-
-        {/* Calendar Grid */}
-        <div className="grid grid-cols-7 gap-2">
-          {calendarDays.map((day, index) => (
-            <button
-              key={index}
-              onClick={() => handleDateClick(day.date)}
-              className={`
-                relative p-3 rounded-xl text-sm font-medium transition-all duration-200 transform hover:scale-105
-                ${day.isCurrentMonth 
-                  ? 'text-gray-800 hover:bg-emerald-100' 
-                  : 'text-gray-400 hover:bg-gray-100'
-                }
-                ${day.isToday 
-                  ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-lg' 
-                  : 'bg-white/60'
-                }
-                ${day.hasSchedule && !day.isToday 
-                  ? 'bg-emerald-50 border-2 border-emerald-200' 
-                  : 'border border-emerald-100'
-                }
-              `}
-            >
-              {day.date.getDate()}
-              {day.hasSchedule && (
-                <div className="absolute top-1 right-1">
-                  <Sparkles className="w-3 h-3 text-emerald-500" />
+        {/* 4-Month Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {[0, 1, 2, 3].map(monthIndex => {
+            const monthDate = new Date(currentStartDate.getFullYear(), currentStartDate.getMonth() + monthIndex, 1);
+            const monthDays = calendarDays.filter(day => day.monthIndex === monthIndex);
+            
+            return (
+              <div key={monthIndex} className="backdrop-blur-sm bg-white/30 rounded-2xl p-4 border border-emerald-200/30 relative overflow-hidden">
+                {/* Month decorative border */}
+                <div className="absolute inset-0 border-2 border-emerald-300/20 rounded-2xl animate-pulse"></div>
+                
+                {/* Month Header */}
+                <div className="text-center mb-4 relative z-10">
+                  <h4 className="text-xl font-bold text-emerald-800 font-serif">
+                    {months[monthDate.getMonth()]} {monthDate.getFullYear()}
+                  </h4>
                 </div>
-              )}
-            </button>
-          ))}
+
+                {/* Week Days Header */}
+                <div className="grid grid-cols-7 gap-1 mb-2">
+                  {weekDays.map(day => (
+                    <div key={day} className="text-center py-1 text-emerald-700 font-semibold text-xs">
+                      {day}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Calendar Days */}
+                <div className="grid grid-cols-7 gap-1">
+                  {monthDays.map((day, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleDateClick(day.date)}
+                      className={`
+                        relative p-2 rounded-lg text-xs font-medium transition-all duration-200 transform hover:scale-105
+                        ${day.isCurrentMonth 
+                          ? 'text-gray-800 hover:bg-emerald-100' 
+                          : 'text-gray-400 hover:bg-gray-100'
+                        }
+                        ${day.isToday 
+                          ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-lg ring-2 ring-emerald-300' 
+                          : 'bg-white/60'
+                        }
+                        ${day.hasSchedule && !day.isToday 
+                          ? 'bg-emerald-50 border-2 border-emerald-200' 
+                          : 'border border-emerald-100'
+                        }
+                      `}
+                    >
+                      {day.date.getDate()}
+                      {day.hasSchedule && (
+                        <div className="absolute top-0 right-0 transform translate-x-1 -translate-y-1">
+                          <Sparkles className="w-2 h-2 text-emerald-500" />
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -429,55 +494,61 @@ const Schedule: React.FC = () => {
         </div>
       )}
 
-      {/* Selected Date Schedules */}
-      {selectedDate && selectedDateSchedules.length > 0 && (
+      {/* Visible Schedules for 4-Month Range */}
+      {visibleSchedules.length > 0 && (
         <div className="backdrop-blur-md bg-white/50 rounded-2xl p-6 border border-emerald-200/50">
           <h3 className="text-xl font-bold text-emerald-800 mb-4 flex items-center">
             <Clock className="w-5 h-5 mr-2" />
-            Schedules for {selectedDate.toLocaleDateString()}
+            Upcoming Schedules ({get4MonthsRange()})
           </h3>
           
-          <div className="space-y-3">
-            {selectedDateSchedules
-              .sort((a, b) => a.time.localeCompare(b.time))
-              .map(entry => (
-                <div
-                  key={entry.id}
-                  className="bg-white/60 rounded-xl p-4 border border-emerald-200/50 hover:bg-white/80 transition-all duration-200"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <h4 className="font-semibold text-emerald-800">{entry.taskName}</h4>
-                        <span className="text-sm text-emerald-600 bg-emerald-100 px-2 py-1 rounded-lg">
-                          {entry.time}
-                        </span>
-                        {entry.alarm && (
-                          <Bell className="w-4 h-4 text-amber-500" title={`Alarm set ${entry.alarmMinutes} minutes before`} />
-                        )}
-                      </div>
-                      {entry.description && (
-                        <p className="text-gray-600 text-sm">{entry.description}</p>
+          <div className="space-y-3 max-h-96 overflow-y-auto">
+            {visibleSchedules.map(entry => (
+              <div
+                key={entry.id}
+                className="bg-white/60 rounded-xl p-4 border border-emerald-200/50 hover:bg-white/80 transition-all duration-200"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <h4 className="font-semibold text-emerald-800">{entry.taskName}</h4>
+                      <span className="text-sm text-emerald-600 bg-emerald-100 px-2 py-1 rounded-lg">
+                        {entry.time}
+                      </span>
+                      {entry.alarm && (
+                        <Bell className="w-4 h-4 text-amber-500" title={`Alarm set ${entry.alarmMinutes} minutes before`} />
                       )}
                     </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handleEditEntry(entry)}
-                        className="p-2 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-100 rounded-lg transition-colors duration-200"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteEntry(entry.id, entry.date)}
-                        className="p-2 text-red-500 hover:text-red-700 hover:bg-red-100 rounded-lg transition-colors duration-200"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                    {entry.description && (
+                      <p className="text-gray-600 text-sm mb-2">{entry.description}</p>
+                    )}
+                    <p className="text-xs text-gray-500">
+                      {new Date(entry.date).toLocaleDateString('en-US', { 
+                        weekday: 'short', 
+                        month: 'short', 
+                        day: 'numeric',
+                        year: 'numeric'
+                      })}
+                    </p>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => handleEditEntry(entry)}
+                      className="p-2 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-100 rounded-lg transition-colors duration-200"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteEntry(entry.id, entry.date)}
+                      className="p-2 text-red-500 hover:text-red-700 hover:bg-red-100 rounded-lg transition-colors duration-200"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
-              ))}
+              </div>
+            ))}
           </div>
         </div>
       )}
