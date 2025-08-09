@@ -136,3 +136,138 @@ input:focus, textarea:focus, select:focus {
     background-position: -200% 0;
   }
 }
+
+/* Fairy Climber Vine Animations */
+@keyframes vine-grow {
+  0% {
+    opacity: 0;
+    transform: scale(0.5) translateY(20px);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(0.8) translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes vine-grow-reverse {
+  0% {
+    opacity: 0;
+    transform: scale(0.5) translateY(-20px);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(0.8) translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes vine-grow-horizontal {
+  0% {
+    opacity: 0;
+    transform: scale(0.5) translateX(-20px);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(0.8) translateX(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateX(0);
+  }
+}
+
+@keyframes vine-grow-horizontal-reverse {
+  0% {
+    opacity: 0;
+    transform: scale(0.5) translateX(20px);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(0.8) translateX(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateX(0);
+  }
+}
+
+@keyframes vine-grow-vertical {
+  0% {
+    opacity: 0;
+    transform: scaleY(0.3) translateX(-10px);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scaleY(0.7) translateX(-5px);
+  }
+  100% {
+    opacity: 1;
+    transform: scaleY(1) translateX(0);
+  }
+}
+
+@keyframes vine-grow-vertical-reverse {
+  0% {
+    opacity: 0;
+    transform: scaleY(0.3) translateX(10px);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scaleY(0.7) translateX(5px);
+  }
+  100% {
+    opacity: 1;
+    transform: scaleY(1) translateX(0);
+  }
+}
+
+.animate-vine-grow {
+  animation: vine-grow 0.8s ease-out forwards;
+}
+
+.animate-vine-grow-reverse {
+  animation: vine-grow-reverse 0.8s ease-out forwards;
+}
+
+.animate-vine-grow-horizontal {
+  animation: vine-grow-horizontal 0.8s ease-out forwards;
+}
+
+.animate-vine-grow-horizontal-reverse {
+  animation: vine-grow-horizontal-reverse 0.8s ease-out forwards;
+}
+
+.animate-vine-grow-vertical {
+  animation: vine-grow-vertical 0.8s ease-out forwards;
+}
+
+.animate-vine-grow-vertical-reverse {
+  animation: vine-grow-vertical-reverse 0.8s ease-out forwards;
+}
+
+/* Enhanced fairy floating animation */
+@keyframes fairy-float {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-8px) rotate(2deg);
+  }
+  50% {
+    transform: translateY(-4px) rotate(-1deg);
+  }
+  75% {
+    transform: translateY(-12px) rotate(1deg);
+  }
+}
+
+.animate-fairy-float {
+  animation: fairy-float 4s ease-in-out infinite;
+}
