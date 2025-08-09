@@ -15,6 +15,7 @@ import TodoList from './TodoList';
 import Notes from './Notes';
 import HabitTracker from './HabitTracker';
 import InspirationBoard from './InspirationBoard';
+import Schedule from './Schedule';
 
 interface DashboardProps {
   user: any;
@@ -44,6 +45,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut }) => {
         return <HabitTracker />;
       case 'inspiration':
         return <InspirationBoard />;
+      case 'schedule':
+        return <Schedule />;
       default:
         return (
           <div className="text-center py-20">
