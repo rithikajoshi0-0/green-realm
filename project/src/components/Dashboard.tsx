@@ -17,6 +17,7 @@ import HabitTracker from './HabitTracker';
 import InspirationBoard from './InspirationBoard';
 import Schedule from './Schedule';
 import Diary from './Diary';
+import Goals from './Goals';
 
 interface DashboardProps {
   user: any;
@@ -50,6 +51,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut }) => {
         return <Schedule />;
       case 'diary':
         return <Diary />;
+      case 'goals':
+        return <Goals />;
       default:
         return (
           <div className="text-center py-20">
