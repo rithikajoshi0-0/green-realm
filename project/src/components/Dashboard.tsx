@@ -110,15 +110,41 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut }) => {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col lg:flex-row gap-8">
+        <div className="flex flex-col xl:flex-row gap-6 lg:gap-8">
           {/* Sidebar Navigation */}
-          <nav className="lg:w-64 flex-shrink-0">
-            <div className="backdrop-blur-md bg-white/70 rounded-3xl p-6 shadow-xl border border-emerald-200/50">
+          <nav className="xl:w-64 flex-shrink-0">
+            <div className="backdrop-blur-md bg-white/70 rounded-3xl p-4 sm:p-6 shadow-xl border border-emerald-200/50">
               <h2 className="text-lg font-semibold text-emerald-800 mb-4 flex items-center">
                 <Sparkles className="w-5 h-5 mr-2" />
                 Magical Tools
               </h2>
-              <ul className="space-y-2">
+              
+              {/* Mobile: Horizontal scroll, Desktop: Vertical list */}
+              <div className="xl:hidden overflow-x-auto pb-2">
+                <div className="flex space-x-2 min-w-max">
+                  {navigationItems.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => setActiveTab(item.id)}
+                        className={`flex items-center space-x-2 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200 whitespace-nowrap ${
+                          activeTab === item.id
+                            ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-lg'
+                            : 'text-emerald-700 hover:bg-emerald-100/70'
+                        }`}
+                      >
+                        <span className="text-base">{item.emoji}</span>
+                        <Icon className="w-4 h-4" />
+                        <span>{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              
+              {/* Desktop: Vertical list */}
+              <ul className="space-y-2 hidden xl:block">
                 {navigationItems.map((item) => {
                   const Icon = item.icon;
                   return (
@@ -145,7 +171,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onSignOut }) => {
           {/* Main Content */}
           <main className="flex-1">
             <div className="backdrop-blur-md bg-white/70 rounded-3xl shadow-xl border border-emerald-200/50 min-h-[600px]">
-              <div className="p-8">
+              <div className="p-4 sm:p-6 lg:p-8">
                 {renderContent()}
               </div>
             </div>
